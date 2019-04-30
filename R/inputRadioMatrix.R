@@ -20,6 +20,8 @@
 #'
 #' @return HTML markup for a table row with radio buttons inputs inside each
 #'   cell
+#'
+#' @noRd
 
 generateRadioRow <- function(rowId, minLabel, maxLabel, choiceNames, choiceValues,
                              selected = NULL){
@@ -51,6 +53,8 @@ generateRadioRow <- function(rowId, minLabel, maxLabel, choiceNames, choiceValue
 #' @param choiceNames character. Names for each option to be displayed on top of the table
 #'
 #' @return HTML markup for the header table row
+#'
+#' @noRd
 
 generateRadioMatrixHeader <- function(choiceNames){
   header <- lapply(c("", choiceNames, ""), function(n){
@@ -83,6 +87,8 @@ generateRadioMatrixHeader <- function(choiceNames){
 #' @param session copied from \code{shiny:::generateOptions}
 #'
 #' @return HTML markup for the radioMatrixInput
+#'
+#' @noRd
 
 generateRadioMatrix <- function (inputId, rowIds, minLabels, maxLabels, selected = NULL,
                                  choiceNames = NULL, choiceValues = NULL,
