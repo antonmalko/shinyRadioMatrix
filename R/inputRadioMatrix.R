@@ -181,7 +181,7 @@ radioMatrixInput <- function(inputId, rowIds, minLabels, maxLabels, choices = NU
   divClass <- "form-group shiny-input-container shiny-radiomatrix-container"
 
   # Make sure that the js and css files are locatable
-  shiny::addResourcePath("radiomatrix", "./inst")
+  shiny::addResourcePath("radiomatrix", system.file(package="shinyRadioMatrix"))
 
   shiny::tagList(
     shiny::tags$head(
