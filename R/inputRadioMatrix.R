@@ -15,6 +15,11 @@
 #'   The advantage of using both of these over a named list for choices is that
 #'   choiceNames allows any type of UI object to be passed through (tag objects,
 #'   icons, HTML code, ...), instead of just simple text.
+#' @param labelsWidth - vector of two values, NULL by default. Each value can be
+#'   replaced with a character, specifying the minimum (first value) and maximum
+#'   (second value) width of the labels columns. The values are assumed contain
+#'   the width itself and the unit, e.g. "20px", and will be written to the
+#'   \code{style} attribute of the labels \code{td} tags.
 #' @param selected either NULL (defualt) or the name of the value which should
 #'   be selected when the component is created
 #'
@@ -24,7 +29,7 @@
 #' @noRd
 
 generateRadioRow <- function(rowId, minLabel, maxLabel, choiceNames, choiceValues,
-                             selected = NULL){
+                             selected = NULL, labelsWidth = list(NULL,NULL)){
 
 
   row_dat <- mapply(choiceNames, choiceValues, FUN = function(name, value){
@@ -38,9 +43,18 @@ generateRadioRow <- function(rowId, minLabel, maxLabel, choiceNames, choiceValue
       shiny::tags$td(inputTag)
   }, SIMPLIFY = FALSE, USE.NAMES = FALSE)
 
-  row_dat <- list(shiny::tags$td(minLabel),
+  style <- NULL
+
+  if(!is.null(labelsWidth[[1]])){
+    style <- paste0(style, "min-width:", labelsWidth[[1]],";")
+  }
+  if(!is.null(labelsWidth[[2]])){
+    style <- paste0(style, "max-width:", labelsWidth[[2]],";")
+  }
+
+  row_dat <- list(if (is.null(style)) shiny::tags$td(minLabel) else shiny::tags$td(minLabel, style = style),
                row_dat,
-               shiny::tags$td(maxLabel))
+              if (is.null(style)) shiny::tags$td(maxLabel) else shiny::tags$td(maxLabel, style = style))
 
   shiny::tags$tr(name = rowId,
                  class = "shiny-radiomatrix-row", # used for CSS styling
@@ -84,21 +98,29 @@ generateRadioMatrixHeader <- function(choiceNames){
 #'   The advantage of using both of these over a named list for choices is that
 #'   choiceNames allows any type of UI object to be passed through (tag objects,
 #'   icons, HTML code, ...), instead of just simple text.
+#' @param labelsWidth - vector of two values, NULL by default. Each value can be
+#'   replaced with a character, specifying the minimum (first value) and maximum
+#'   (second value) width of the labels columns. The values are assumed contain
+#'   the width itself and the unit, e.g. "20px", and will be written to the
+#'   \code{style} attribute of the labels \code{td} tags.
 #' @param session copied from \code{shiny:::generateOptions}
 #'
 #' @return HTML markup for the radioMatrixInput
 #'
 #' @noRd
 
-generateRadioMatrix <- function (inputId, rowIds, minLabels, maxLabels, selected = NULL,
+generateRadioMatrix <- function (inputId, rowIds, minLabels, maxLabels,
                                  choiceNames = NULL, choiceValues = NULL,
+                                 selected = NULL,
+                                 labelsWidth = list(NULL,NULL),
                                  session = getDefaultReactiveDomain()){
 
   header <- generateRadioMatrixHeader(choiceNames)
   rows <- lapply(1:length(rowIds), function(i){
     generateRadioRow(rowId = rowIds[[i]], minLabel = minLabels[[i]], maxLabel = maxLabels[[i]],
                      choiceNames = choiceNames, choiceValues = choiceValues,
-                     selected = if (is.null(selected)) selected else selected[[i]])
+                     selected = if (is.null(selected)) selected else selected[[i]],
+                     labelsWidth = labelsWidth)
   })
 
   table <- shiny::tags$table(header, rows)
@@ -106,7 +128,7 @@ generateRadioMatrix <- function (inputId, rowIds, minLabels, maxLabels, selected
   shiny::div(class = "shiny-radiomatrix", table)
 }
 
-validateParams <- function(rowIds, minLabels, maxLabels, selected, choiceNames){
+validateParams <- function(rowIds, minLabels, maxLabels, selected, choiceNames, labelsWidth){
 
   if (is.null(selected)){
     checks <- list(rowIds, minLabels, maxLabels)
@@ -131,6 +153,17 @@ validateParams <- function(rowIds, minLabels, maxLabels, selected, choiceNames){
 
   if (length(choiceNames) < 2){
     stop("There should be at least two columns in the radio matrix (i.e. at least two choiceNames specified)")
+  }
+
+  if (!is.list(labelsWidth)){
+    stop("labelsWidth must be a list!")
+  }
+
+  lwNull <- sapply(labelsWidth, is.null)
+  lwChar <- sapply(labelsWidth, is.character)
+  lwTest <- !(lwNull | lwChar)
+  if (any(lwTest)){
+    stop("labelsWidth can only contain NULLs or characters!")
   }
 
 }
@@ -160,23 +193,30 @@ validateParams <- function(rowIds, minLabels, maxLabels, selected, choiceNames){
 #'   The advantage of using both of these over a named list for choices is that
 #'   choiceNames allows any type of UI object to be passed through (tag objects,
 #'   icons, HTML code, ...), instead of just simple text.
+#' @param labelsWidth - vector of two values, NULL by default. Each value can be
+#'   replaced with a character, specifying the minimum (first value) and maximum
+#'   (second value) width of the labels columns. The values are assumed contain
+#'   the width itself and the unit, e.g. "20px", and will be written to the
+#'   \code{style} attribute of the labels \code{td} tags.
 #'
 #' @return HTML markup for radioMatrixInput
 #' @export
 
 radioMatrixInput <- function(inputId, rowIds, minLabels, maxLabels, choices = NULL,
-                             selected = NULL, choiceNames = NULL, choiceValues = NULL) {
+                             selected = NULL, choiceNames = NULL, choiceValues = NULL,
+                             labelsWidth = list(NULL,NULL)) {
 
   # check the inputs
   args <- shiny:::normalizeChoicesArgs(choices, choiceNames, choiceValues)
   selected <- shiny:::restoreInput(id = inputId, default = selected)
-  validateParams(rowIds, minLabels, maxLabels, selected, args$choiceNames)
+  validateParams(rowIds, minLabels, maxLabels, selected, args$choiceNames,labelsWidth)
 
   # generate the HTML for the controller itself
   radiomatrix <- generateRadioMatrix(inputId = inputID, rowIds = rowIds,
                                      minLabels = minLabels, maxLabels = maxLabels,
                                      selected = selected,
-                                     choiceNames = args$choiceNames, choiceValues = args$choiceValues)
+                                     choiceNames = args$choiceNames, choiceValues = args$choiceValues,
+                                     labelsWidth = labelsWidth)
 
   divClass <- "form-group shiny-input-container shiny-radiomatrix-container"
 
